@@ -27,10 +27,6 @@ async def list_drones(db: Session = Depends(get_db)):
             "current_payload": None
         })
 
-    # Nếu database trống (ví dụ môi trường test), trả về drone mẫu để các test không fail.
-    if not result:
-        return [{"drone_id": 1, "status": "idle", "battery": 100.0, "current_payload": 0.0}]
-
     return result
 
 @router.get("/{drone_id}", response_model=DroneStatus)
