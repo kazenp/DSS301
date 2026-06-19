@@ -1,0 +1,3 @@
+model,max_iter,class_weight,random_state,n_estimators
+Logistic Regression,1000.0,balanced,,
+Random Forest,,balanced,42.0,200.0

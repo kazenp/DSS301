@@ -1,0 +1,55 @@
+{
+  "system_info": {
+    "project_name": "Drone Delivery DSS + ML System",
+    "course_code": "DSS301",
+    "last_updated": "2026-06-19"
+  },
+  "models": {
+    "logistic_regression": {
+      "model_file": "logistic_model.pkl",
+      "status": "trained",
+      "best_hyperparameters": {
+        "max_iter": 1000,
+        "class_weight": "balanced"
+      },
+      "performance_metrics": {
+        "accuracy": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1_score": 1.0,
+        "auc_roc": 1.0
+      }
+    },
+    "random_forest": {
+      "model_file": "random_forest_model.pkl",
+      "status": "trained",
+      "best_hyperparameters": {
+        "n_estimators": 200,
+        "random_state": 42,
+        "class_weight": "balanced"
+      },
+      "performance_metrics": {
+        "accuracy": 0.9905660377358491,
+        "precision": 0.9905660377358491,
+        "recall": 1.0,
+        "f1_score": 0.995260663507109,
+        "auc_roc": 0.8904761904761904
+      }
+    }
+  },
+  "features": {
+    "numerical": [
+      "wind_speed",
+      "battery_remaining",
+      "actual_carry_weight",
+      "altitude",
+      "distance_flown",
+      "gps_accuracy"
+    ],
+    "categorical": [
+      "payload_type",
+      "obstacles_encountered"
+    ],
+    "target": "flight_target"
+  }
+}

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drone Dispatch Center - Admin Dashboard</title>
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="logo">
+                <span class="logo-icon">🛰️</span>
+                <h1>DroneDelivery <span class="badge admin">Admin</span></h1>
+            </div>
+            <nav class="nav-links">
+                <a href="../client/index.html">Go to Client</a>
+                <a href="#" class="active">Dispatch Center</a>
+            </nav>
+        </header>
+
+        <main class="dashboard-grid">
+            <!-- Left Side: System Control & Drone Status -->
+            <div class="sidebar">
+                <section class="control-card">
+                    <h2>System Control</h2>
+                    <p class="section-desc">Manage system-wide configuration and peak hours operations.</p>
+                    
+                    <div class="control-group">
+                        <label class="switch-container">
+                            <span class="switch-label">Busy Day Mode (Peak Hours)</span>
+                            <input type="checkbox" id="busyDayToggle">
+                            <span class="switch-slider"></span>
+                        </label>
+                        <p class="hint-text">Enabling this activates stricter DSS rules (e.g. higher battery threshold & higher probability requirements).</p>
+                    </div>
+                </section>
+
+                <section class="drone-list-section">
+                    <div class="section-header">
+                        <h2>Drone Fleet</h2>
+                        <button id="refreshDrones" class="btn-icon">🔄</button>
+                    </div>
+                    <div class="drones-container" id="dronesContainer">
+                        <p class="loading-text">Loading drone status...</p>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Right Side: Order Management -->
+            <div class="main-content">
+                <section class="orders-section">
+                    <div class="section-header">
+                        <h2>Active Delivery Orders</h2>
+                        <button id="refreshOrders" class="btn btn-secondary btn-small">Refresh Orders</button>
+                    </div>
+                    <p class="section-desc">Incoming delivery requests. System uses machine learning (logistic pipeline) to assist your routing decisions.</p>
+
+                    <div class="table-container">
+                        <table class="orders-table">
+                            <thead>
+                                <tr>
+                                    <th>Client</th>
+                                    <th>Destination</th>
+                                    <th>Weight</th>
+                                    <th>Distance</th>
+                                    <th>DSS Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ordersTableBody">
+                                <tr>
+                                    <td colspan="6" class="empty-state">No orders found. Use the client interface to create requests.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <footer class="app-footer">
+            <p>&copy; 2026 Drone Delivery DSS Project. Group DSS301.</p>
+        </footer>
+    </div>
+    
+    <script src="main.js"></script>
+</body>
+</html>

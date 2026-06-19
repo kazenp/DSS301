@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drone Dispatch Client - Create Order</title>
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="logo">
+                <span class="logo-icon">🚁</span>
+                <h1>DroneDelivery <span class="badge">Client</span></h1>
+            </div>
+            <nav class="nav-links">
+                <a href="#" class="active">Request Delivery</a>
+                <a href="../admin/index.html">Go to Admin</a>
+            </nav>
+        </header>
+
+        <main class="main-content">
+            <section class="form-section">
+                <h2>Create Delivery Request</h2>
+                <p class="subtitle">Provide payload specifications and location to estimate delivery risk and dispatch a drone.</p>
+                
+                <form id="orderForm" class="order-form">
+                    <div class="form-group">
+                        <label for="clientName">Client Name</label>
+                        <input type="text" id="clientName" placeholder="e.g. Central Pharmacy" required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="destination">Destination Coordinates / Address</label>
+                            <input type="text" id="destination" placeholder="e.g. Sector 7, Area B" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="distance">Distance (km)</label>
+                            <input type="number" id="distance" step="0.1" min="0.1" placeholder="e.g. 4.5" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="weight">Payload Weight (kg)</label>
+                            <input type="number" id="weight" step="0.01" min="0.01" max="10.0" placeholder="e.g. 1.25" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="payloadType">Payload Type</label>
+                            <select id="payloadType" required>
+                                <option value="" disabled selected>Select payload type</option>
+                                <option value="medical">Medical Supplies</option>
+                                <option value="food">Food Delivery</option>
+                                <option value="standard">Standard Package</option>
+                                <option value="fragile">Fragile Goods</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="submitBtn" class="btn btn-primary">
+                        <span>Estimate & Submit</span>
+                        <span class="btn-spinner hidden"></span>
+                    </button>
+                </form>
+            </section>
+
+            <section class="status-section">
+                <div id="resultsCard" class="results-card hidden">
+                    <div class="results-header">
+                        <h3>DSS Evaluation Result</h3>
+                        <span id="dssStatusBadge" class="status-badge">PENDING</span>
+                    </div>
+                    
+                    <div class="results-body">
+                        <div class="metric-group">
+                            <div class="metric-card">
+                                <span class="metric-label">ML Success Probability</span>
+                                <span id="successProb" class="metric-value">-</span>
+                            </div>
+                            <div class="metric-card">
+                                <span class="metric-label">Risk Level</span>
+                                <span id="riskLevel" class="metric-value">-</span>
+                            </div>
+                        </div>
+
+                        <div class="decision-reason-box">
+                            <h4 class="reason-title">System Assessment & Decision</h4>
+                            <p id="decisionReason" class="reason-text">Awaiting calculation...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="app-footer">
+            <p>&copy; 2026 Drone Delivery DSS Project. Group DSS301.</p>
+        </footer>
+    </div>
+    
+    <script src="main.js"></script>
+</body>
+</html>

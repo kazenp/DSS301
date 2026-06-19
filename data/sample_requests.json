@@ -1,0 +1,70 @@
+[
+  {
+    "description": "Safe operation flight request (Normal conditions)",
+    "payload": {
+      "telemetry": {
+        "wind_speed": 4.5,
+        "battery_remaining": 95.0,
+        "actual_carry_weight": 1.5,
+        "payload_type": "medical",
+        "altitude": 120.0,
+        "distance_flown": 3.2,
+        "gps_accuracy": 1.2,
+        "obstacles_encountered": 0
+      },
+      "busy_day": false,
+      "model_type": "logistic"
+    }
+  },
+  {
+    "description": "High wind risk request (Should trigger DSS Reject)",
+    "payload": {
+      "telemetry": {
+        "wind_speed": 14.2,
+        "battery_remaining": 88.0,
+        "actual_carry_weight": 2.0,
+        "payload_type": "standard",
+        "altitude": 100.0,
+        "distance_flown": 5.0,
+        "gps_accuracy": 1.8,
+        "obstacles_encountered": 1
+      },
+      "busy_day": false,
+      "model_type": "logistic"
+    }
+  },
+  {
+    "description": "Busy day low battery request (Should trigger Busy Day specific DSS Reject)",
+    "payload": {
+      "telemetry": {
+        "wind_speed": 5.0,
+        "battery_remaining": 25.0,
+        "actual_carry_weight": 1.8,
+        "payload_type": "food",
+        "altitude": 80.0,
+        "distance_flown": 2.5,
+        "gps_accuracy": 1.5,
+        "obstacles_encountered": 0
+      },
+      "busy_day": true,
+      "model_type": "logistic"
+    }
+  },
+  {
+    "description": "Overloaded payload request (Should trigger DSS Weight limit Reject)",
+    "payload": {
+      "telemetry": {
+        "wind_speed": 3.0,
+        "battery_remaining": 100.0,
+        "actual_carry_weight": 6.5,
+        "payload_type": "standard",
+        "altitude": 120.0,
+        "distance_flown": 1.0,
+        "gps_accuracy": 1.0,
+        "obstacles_encountered": 0
+      },
+      "busy_day": false,
+      "model_type": "random_forest"
+    }
+  }
+]
