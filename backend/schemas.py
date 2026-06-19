@@ -1,5 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
+from datetime import datetime
+
 
 class TelemetryInput(BaseModel):
     wind_speed: float = Field(..., description="Wind speed in m/s")
@@ -17,22 +19,42 @@ class OrderCreate(BaseModel):
     weight: float
     payload_type: str
     distance: float
+    status: Optional[str] = "pending"
+    risk_score: Optional[float] = None
+    dss_decision: Optional[str] = None
+    reason: Optional[str] = None
+    assigned_drone_id: Optional[int] = None
+    eta_minutes: Optional[int] = None
+    timeline: Optional[List[Dict[str, Any]]] = None
 
 class OrderResponse(BaseModel):
-    id: str
+    id: int
     client_name: str
     destination: str
     weight: float
     payload_type: str
     distance: float
     status: str  # pending, approved, rejected, delivering, completed
-    created_at: str
+    created_at: datetime
     risk_score: Optional[float] = None
     dss_decision: Optional[str] = None
     reason: Optional[str] = None
+    assigned_drone_id: Optional[int] = None
+    eta_minutes: Optional[int] = None
+    timeline: Optional[List[Dict[str, Any]]] = None
+
+class OrderUpdate(BaseModel):
+    status: str
+    risk_score: Optional[float] = None
+    dss_decision: Optional[str] = None
+    reason: Optional[str] = None
+    assigned_drone_id: Optional[int] = None
+    eta_minutes: Optional[int] = None
+    timeline: Optional[List[Dict[str, Any]]] = None
+
 
 class DroneStatus(BaseModel):
-    drone_id: str
+    drone_id: int
     status: str  # idle, busy, charging, maintenance
     battery: float
     current_payload: Optional[float] = None

@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 import pytest
 from fastapi.testclient import TestClient
 from backend.app import app
@@ -95,4 +96,23 @@ def test_admin_status():
     updated_data = post_response.json()
     assert updated_data["busy_day"] is True
     assert updated_data["system_status"] == "maintenance"
+
+def test_get_and_update_drone():
+    # Test GET single drone (drone_id=1 should exist from our database seed or fallback)
+    response = client.get("/api/v1/drones/1")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["drone_id"] == 1
+    assert "status" in data
+    assert "battery" in data
+
+    # Test POST update status
+    update_response = client.post("/api/v1/drones/1/update-status?status=busy&battery=85.0")
+    assert update_response.status_code == 200
+    update_data = update_response.json()
+    assert update_data["message"] == "Status updated successfully"
+    assert update_data["drone"]["drone_id"] == 1
+    assert update_data["drone"]["status"] == "busy"
+    assert update_data["drone"]["battery"] == 85.0
+
 
