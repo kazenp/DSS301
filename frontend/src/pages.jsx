@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Badge, Kpi, OrderDetail } from "./components";
 import { ROUTES } from "./routes";
 import { safeNumber, formatDate, tone, randomTelemetry } from "./utils";
+import { loginAPI, registerAPI } from "./api";
 
 export function HomePage({ navigate, auth, stats }) {
   const cards = [
@@ -62,26 +63,38 @@ export function LoginPage({ onSignIn, navigate }) {
   const [password, setPassword] = useState("password123");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
     
-    // Dynamically authorize the role based on the email content (for prototype convenience)
-    let authenticatedRole = "customer";
-    const lowerEmail = email.toLowerCase();
-    
-    if (lowerEmail.includes("admin")) {
-      authenticatedRole = "admin";
-    } else if (lowerEmail.includes("dispatcher") || lowerEmail.includes("staff")) {
-      authenticatedRole = "dispatcher";
+    try {
+      setLoading(true);
+      const res = await loginAPI(email, password);
+      
+      // Parse payload from JWT token
+      const base64Url = res.access_token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      const payload = JSON.parse(jsonPayload);
+      
+      const authUser = {
+        role: payload.role || "customer",
+        displayName: payload.name || payload.sub,
+        token: res.access_token,
+        signedInAt: new Date().toISOString()
+      };
+      
+      onSignIn(authUser);
+    } catch (err) {
+      setError(err.message || "Incorrect email or password");
+    } finally {
+      setLoading(false);
     }
-    
-    onSignIn(authenticatedRole);
-  };
-
-  const handleDemoFill = (demoEmail) => {
-    setEmail(demoEmail);
-    setPassword("password123");
   };
 
   return (
@@ -92,6 +105,12 @@ export function LoginPage({ onSignIn, navigate }) {
           <h2 style={{ fontSize: "1.6rem", color: "#ffffff" }}>Welcome Back</h2>
           <p className="muted" style={{ fontSize: "0.9rem" }}>Please sign in to access the DSS dashboard</p>
         </div>
+
+        {error && (
+          <div style={{ color: "#ef4444", backgroundColor: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.2)", borderRadius: "8px", padding: "10px", marginBottom: "16px", fontSize: "0.9rem", textAlign: "center" }}>
+            {error}
+          </div>
+        )}
 
         <form 
           onSubmit={handleSubmit} 
@@ -148,28 +167,11 @@ export function LoginPage({ onSignIn, navigate }) {
             type="submit"
             className="btn" 
             style={{ width: "100%", marginTop: "8px", padding: "14px" }}
+            disabled={loading}
           >
-            Sign In
+            {loading ? "Signing In..." : "Sign In"}
           </button>
         </form>
-
-        <div style={{ marginTop: "24px", borderTop: "1px solid var(--line)", paddingTop: "16px" }}>
-          <p className="muted" style={{ marginBottom: "10px", fontWeight: "700", textTransform: "uppercase", fontSize: "0.75rem", letterSpacing: "0.05em", color: "var(--accent-2)" }}>Quick Demo Accounts</p>
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <button type="button" onClick={() => handleDemoFill("customer@drones.dss")} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid var(--line)", borderRadius: "8px", padding: "8px 12px", color: "#f8fafc", cursor: "pointer", textAlign: "left", display: "flex", justifyContent: "space-between", alignItems: "center", transition: "all 0.2s ease" }} className="demo-btn">
-              <span style={{ fontWeight: "600" }}>Customer Portal</span>
-              <code style={{ fontSize: "0.8rem", color: "var(--accent-2)" }}>customer@drones.dss</code>
-            </button>
-            <button type="button" onClick={() => handleDemoFill("dispatcher@drones.dss")} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid var(--line)", borderRadius: "8px", padding: "8px 12px", color: "#f8fafc", cursor: "pointer", textAlign: "left", display: "flex", justifyContent: "space-between", alignItems: "center", transition: "all 0.2s ease" }} className="demo-btn">
-              <span style={{ fontWeight: "600" }}>Dispatcher Panel</span>
-              <code style={{ fontSize: "0.8rem", color: "var(--accent-2)" }}>dispatcher@drones.dss</code>
-            </button>
-            <button type="button" onClick={() => handleDemoFill("admin@drones.dss")} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid var(--line)", borderRadius: "8px", padding: "8px 12px", color: "#f8fafc", cursor: "pointer", textAlign: "left", display: "flex", justifyContent: "space-between", alignItems: "center", transition: "all 0.2s ease" }} className="demo-btn">
-              <span style={{ fontWeight: "600" }}>Admin Settings</span>
-              <code style={{ fontSize: "0.8rem", color: "var(--accent-2)" }}>admin@drones.dss</code>
-            </button>
-          </div>
-        </div>
 
         <div style={{ textAlign: "center", marginTop: "24px", fontSize: "0.85rem", color: "var(--muted)" }}>
           Don't have an account?{" "}
@@ -189,17 +191,28 @@ export function RegisterPage({ navigate }) {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [role, setRole] = useState("customer");
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+    
     if (password !== confirmPassword) {
-      alert("Passwords do not match!");
+      setError("Passwords do not match!");
       return;
     }
     
-    // Simulate successful registration
-    alert(`Registration successful for ${name} as ${role}! Please log in with your demo credentials.`);
-    navigate(ROUTES.login);
+    try {
+      setLoading(true);
+      await registerAPI(name, email, password, role);
+      alert(`Registration successful for ${name} as ${role}! Please log in with your credentials.`);
+      navigate(ROUTES.login);
+    } catch (err) {
+      setError(err.message || "Failed to register account");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -210,6 +223,12 @@ export function RegisterPage({ navigate }) {
           <h2 style={{ fontSize: "1.6rem", color: "#ffffff" }}>Create Account</h2>
           <p className="muted" style={{ fontSize: "0.9rem" }}>Register a new account to access the DSS system</p>
         </div>
+
+        {error && (
+          <div style={{ color: "#ef4444", backgroundColor: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.2)", borderRadius: "8px", padding: "10px", marginBottom: "16px", fontSize: "0.9rem", textAlign: "center" }}>
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="form-grid" style={{ gap: "16px" }}>
           <div className="field">
@@ -241,9 +260,6 @@ export function RegisterPage({ navigate }) {
               <option value="dispatcher">Dispatcher Panel</option>
               <option value="admin">Admin Settings</option>
             </select>
-            <p className="muted" style={{ fontSize: "0.75rem", marginTop: "4px" }}>
-              * Tip: For prototype testing, make sure your email contains the keyword "admin" or "dispatcher" (e.g. jdoe_admin@drones.dss) to login with that role!
-            </p>
           </div>
 
           <div className="field">
@@ -281,8 +297,9 @@ export function RegisterPage({ navigate }) {
             type="submit"
             className="btn" 
             style={{ width: "100%", marginTop: "8px", padding: "14px" }}
+            disabled={loading}
           >
-            Create Account
+            {loading ? "Creating Account..." : "Create Account"}
           </button>
         </form>
 
@@ -696,11 +713,15 @@ export function DispatcherPage({
               >
                 <div className="row-between">
                   <strong>{drone.name}</strong>
-                  <Badge status={drone.status}>{drone.status}</Badge>
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    {drone.battery < 30 && (
+                      <span style={{ fontSize: "0.7rem", background: "rgba(239,68,68,0.15)", color: "#ef4444", borderRadius: 4, padding: "1px 6px", fontWeight: 600 }}>⚠ Low Battery</span>
+                    )}
+                    <Badge status={drone.status}>{drone.status}</Badge>
+                  </div>
                 </div>
                 <p className="muted">
-                  Battery {safeNumber(drone.battery)}% · Payload{" "}
-                  {drone.current_payload ?? "none"} · {drone.location}
+                  Battery {safeNumber(drone.battery)}% · {drone.location || "Base"} · Max {safeNumber(drone.max_payload ?? 5)} kg
                 </p>
               </button>
             ))}
@@ -734,15 +755,19 @@ export function DronePage({ drones, selectedDroneId, setSelectedDroneId }) {
               className="surface"
               type="button"
               onClick={() => setSelectedDroneId(item.drone_id)}
-              style={{ textAlign: "left" }}
+              style={{ textAlign: "left", borderLeft: item.battery < 30 ? "3px solid #ef4444" : undefined }}
             >
               <div className="row-between">
                 <strong>{item.name}</strong>
-                <Badge status={item.status}>{item.status}</Badge>
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  {item.battery < 30 && (
+                    <span style={{ fontSize: "0.7rem", background: "rgba(239,68,68,0.15)", color: "#ef4444", borderRadius: 4, padding: "1px 6px", fontWeight: 600 }}>⚠ Low</span>
+                  )}
+                  <Badge status={item.status}>{item.status}</Badge>
+                </div>
               </div>
               <p className="muted">
-                Battery {safeNumber(item.battery)}% · Payload{" "}
-                {item.current_payload ?? "none"} · {item.location}
+                🔋 {safeNumber(item.battery)}% · 📍 {item.location || "Base"} · Max {safeNumber(item.max_payload ?? 5)} kg
               </p>
             </button>
           ))}
@@ -758,20 +783,23 @@ export function DronePage({ drones, selectedDroneId, setSelectedDroneId }) {
         {selected ? (
           <div className="grid" style={{ marginTop: 14 }}>
             <div className="surface">
-              <p>
-                <strong>{selected.name}</strong>
-              </p>
-              <p className="muted">Location: {selected.location}</p>
-              <p className="muted">Battery: {safeNumber(selected.battery)}%</p>
-              <p className="muted">Max payload: {selected.max_payload} kg</p>
+              <p><strong>{selected.name}</strong></p>
+              <p className="muted">📍 Location: {selected.location || "Base"}</p>
+              <p className="muted">🔋 Battery: {safeNumber(selected.battery)}%</p>
+              <p className="muted">⚖️ Max payload: {safeNumber(selected.max_payload ?? 5)} kg</p>
+              <p className="muted">📦 Current payload: {selected.current_payload != null ? `${safeNumber(selected.current_payload)} kg` : "None"}</p>
             </div>
             <div className="surface">
-              <p>
-                <strong>Warnings</strong>
-              </p>
-              <p className="muted">
-                {selected.battery < 30 ? "Low battery warning" : "Operational"}
-              </p>
+              <p><strong>Status &amp; Warnings</strong></p>
+              {selected.battery < 20 ? (
+                <p style={{ color: "#ef4444", fontWeight: 600 }}>🚨 Critical battery – ground immediately</p>
+              ) : selected.battery < 30 ? (
+                <p style={{ color: "#f97316", fontWeight: 600 }}>⚠ Low battery warning</p>
+              ) : (
+                <p className="muted">✅ Operational</p>
+              )}
+              {selected.status === "maintenance" && <p style={{ color: "#f59e0b" }}>🔧 Under maintenance</p>}
+              {selected.status === "busy" && <p style={{ color: "#3b82f6" }}>🚁 Currently on delivery</p>}
             </div>
           </div>
         ) : (

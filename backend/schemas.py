@@ -55,9 +55,12 @@ class OrderUpdate(BaseModel):
 
 class DroneStatus(BaseModel):
     drone_id: int
+    name: Optional[str] = None
     status: str  # idle, busy, charging, maintenance
     battery: float
     current_payload: Optional[float] = None
+    location: Optional[str] = None
+    max_payload: Optional[float] = None
 
 class PredictionRequest(BaseModel):
     telemetry: TelemetryInput
@@ -79,3 +82,30 @@ class DSSDecisionResponse(BaseModel):
     dss_approved: bool
     final_status: str
     decision_reason: str
+
+
+# Authentication Schemas
+class UserRegister(BaseModel):
+    username: str
+    email: str
+    password: str
+    role: Optional[str] = "customer"  # customer, dispatcher, admin
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+class UserResponse(BaseModel):
+    id: int
+    username: str
+    email: str
+    role: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str
+
