@@ -35,6 +35,8 @@ if config.config_file_name is not None:
 from backend.database import Base
 from backend.models.drone import DroneModel
 from backend.models.order import OrderModel
+from backend.models.user import UserModel
+from backend.models.admin import AdminStateModel
 
 # Đổi None thành Base.metadata để Alembic theo dõi cấu trúc bảng
 target_metadata = Base.metadata

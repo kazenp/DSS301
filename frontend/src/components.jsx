@@ -89,3 +89,51 @@ export function OrderDetail({ order }) {
     </div>
   );
 }
+
+export function AccessDenied({ role, required, navigate }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: "40vh",
+        textAlign: "center",
+        padding: "2rem",
+      }}
+    >
+      <div
+        style={{
+          fontSize: "3.5rem",
+          marginBottom: "1rem",
+          lineHeight: 1,
+        }}
+      >
+        🔒
+      </div>
+      <h2 style={{ marginBottom: "0.5rem", color: "#ef4444" }}>
+        Access Denied
+      </h2>
+      <p style={{ color: "var(--muted, #8b8fa8)", marginBottom: "0.5rem" }}>
+        Your current role{" "}
+        <strong style={{ color: "var(--text, #e2e5f1)" }}>
+          {role || "guest"}
+        </strong>{" "}
+        does not have permission to view this page.
+      </p>
+      <p style={{ color: "var(--muted, #8b8fa8)", marginBottom: "1.5rem" }}>
+        This page requires:{" "}
+        <strong style={{ color: "var(--text, #e2e5f1)" }}>{required}</strong>
+      </p>
+      <button
+        className="btn"
+        type="button"
+        onClick={() => navigate && navigate("#/")}
+      >
+        ← Go back to Home
+      </button>
+    </div>
+  );
+}
+

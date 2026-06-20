@@ -10,12 +10,32 @@ function timeoutSignal(timeoutMs = 10000) {
 async function requestJson(path, options = {}) {
   const { signal, clear } = timeoutSignal(options.timeoutMs || 10000);
   try {
-    const response = await fetch(new URL(path, DEFAULT_API_BASE_URL), {
+    const baseUrl = DEFAULT_API_BASE_URL.endsWith("/")
+      ? DEFAULT_API_BASE_URL
+      : `${DEFAULT_API_BASE_URL}/`;
+    const cleanPath = path.startsWith("/") ? path.slice(1) : path;
+    
+    // Read token from localStorage
+    let authHeaders = {};
+    try {
+      const authRaw = localStorage.getItem("dss.auth");
+      if (authRaw) {
+        const auth = JSON.parse(authRaw);
+        if (auth && auth.token) {
+          authHeaders["Authorization"] = `Bearer ${auth.token}`;
+        }
+      }
+    } catch (e) {
+      // Ignore
+    }
+
+    const response = await fetch(new URL(cleanPath, baseUrl), {
       method: options.method || "GET",
       headers: {
         ...(options.body !== undefined
           ? { "Content-Type": "application/json" }
           : {}),
+        ...authHeaders,
         ...(options.headers || {}),
       },
       body:
@@ -24,6 +44,12 @@ async function requestJson(path, options = {}) {
     });
     const payload = await response.json().catch(() => null);
     if (!response.ok) {
+      // Dispatch a global event so App.jsx can react (e.g. sign out on 401)
+      if (response.status === 401 || response.status === 403) {
+        window.dispatchEvent(new CustomEvent("api:auth-error", {
+          detail: { status: response.status, path }
+        }));
+      }
       throw new Error(payload?.detail || `Request failed (${response.status})`);
     }
     return payload;
@@ -95,4 +121,22 @@ export async function updateDroneStatusBackend(droneId, status, battery) {
   return await requestJson(`/drones/${droneId}/update-status?status=${status}&battery=${battery}`, {
     method: "POST",
   });
+}
+
+export async function loginAPI(email, password) {
+  return await requestJson("/auth/login", {
+    method: "POST",
+    body: { email, password },
+  });
+}
+
+export async function registerAPI(name, email, password, role) {
+  return await requestJson("/auth/register", {
+    method: "POST",
+    body: { username: name, email, password, role },
+  });
+}
+
+export async function getMeAPI() {
+  return await requestJson("/auth/me");
 }

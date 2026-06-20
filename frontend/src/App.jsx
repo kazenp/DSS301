@@ -6,6 +6,7 @@ import {
   updateAdminStatus,
   updateOrderBackend,
   updateDroneStatusBackend,
+  getMeAPI,
 } from "./api";
 import {
   clearAuth,
@@ -14,7 +15,7 @@ import {
   safeClone,
 } from "./data";
 import { ROUTES, currentRoute, navigate } from "./routes";
-import { Badge, CenteredShell, Kpi, NavButton, Toast } from "./components";
+import { AccessDenied, Badge, CenteredShell, Kpi, NavButton, Toast } from "./components";
 import {
   AdminPage,
   AuditPage,
@@ -78,14 +79,41 @@ function App() {
 
   useEffect(() => {
     let mounted = true;
-    bootstrapAppData()
-      .then((data) => {
+    async function initApp() {
+      try {
+        let authUser = auth;
+        // Verify current session with backend if we have a token
+        if (auth && auth.token) {
+          try {
+            const me = await getMeAPI();
+            authUser = {
+              role: me.role,
+              displayName: me.username,
+              token: auth.token,
+              signedInAt: auth.signedInAt || new Date().toISOString()
+            };
+            if (mounted) setAuth(authUser);
+          } catch (meError) {
+            // Token is invalid/expired
+            if (mounted) {
+              setAuth(null);
+              clearAuth();
+              navigateTo(ROUTES.login);
+            }
+            authUser = null;
+          }
+        }
+
+        const data = await bootstrapAppData();
         if (!mounted) return;
         setState(data);
         setBusyDay(Boolean(data.admin?.busy_day));
         setLoading(false);
-      })
-      .catch(() => mounted && setLoading(false));
+      } catch (err) {
+        if (mounted) setLoading(false);
+      }
+    }
+    initApp();
     return () => {
       mounted = false;
     };
@@ -100,6 +128,23 @@ function App() {
   useEffect(() => {
     saveAuth(auth);
   }, [auth]);
+
+  // Listen for global 401/403 errors – sign out automatically
+  useEffect(() => {
+    const handler = (e) => {
+      // Only sign out on 401 (token expired/invalid), not 403 (wrong role)
+      if (e.detail?.status === 401) {
+        clearAuth();
+        setAuth(null);
+        navigateTo(ROUTES.login);
+        notify("Session expired. Please sign in again.", "warning");
+      } else if (e.detail?.status === 403) {
+        notify("You don't have permission to perform that action.", "error");
+      }
+    };
+    window.addEventListener("api:auth-error", handler);
+    return () => window.removeEventListener("api:auth-error", handler);
+  }, [navigateTo]);
 
   const notify = (message, type = "success") => {
     setToast({ message, type, id: Date.now() });
@@ -122,25 +167,14 @@ function App() {
     notify("Dashboard refreshed.", "success");
   };
 
-  const signIn = (role) => {
-    const profile = {
-      role,
-      displayName:
-        role === "customer"
-          ? "Customer User"
-          : role === "admin"
-            ? "Admin User"
-            : "Dispatcher User",
-      token: `${role}-demo-token`,
-      signedInAt: new Date().toISOString(),
-    };
-    saveAuth(profile);
-    setAuth(profile);
-    notify(`Signed in as ${profile.displayName}`, "success");
+  const signIn = (authUser) => {
+    saveAuth(authUser);
+    setAuth(authUser);
+    notify(`Signed in as ${authUser.displayName}`, "success");
     navigateTo(
-      role === "customer"
+      authUser.role === "customer"
         ? ROUTES.customer
-        : role === "admin"
+        : authUser.role === "admin"
           ? ROUTES.admin
           : ROUTES.dispatcher,
     );
@@ -423,6 +457,7 @@ function App() {
             )}
             {auth && (
               <>
+                {/* Customer: visible to all roles */}
                 <NavButton
                   active={route === ROUTES.customer}
                   onClick={() => navigateTo(ROUTES.customer)}
@@ -435,30 +470,40 @@ function App() {
                 >
                   Orders
                 </NavButton>
-                <NavButton
-                  active={route === ROUTES.dispatcher}
-                  onClick={() => navigateTo(ROUTES.dispatcher)}
-                >
-                  Dispatcher
-                </NavButton>
-                <NavButton
-                  active={route === ROUTES.drones}
-                  onClick={() => navigateTo(ROUTES.drones)}
-                >
-                  Drones
-                </NavButton>
-                <NavButton
-                  active={route === ROUTES.admin}
-                  onClick={() => navigateTo(ROUTES.admin)}
-                >
-                  Admin
-                </NavButton>
-                <NavButton
-                  active={route === ROUTES.audit}
-                  onClick={() => navigateTo(ROUTES.audit)}
-                >
-                  Audit
-                </NavButton>
+                {/* Dispatcher & Admin only */}
+                {["dispatcher", "admin"].includes(auth.role) && (
+                  <NavButton
+                    active={route === ROUTES.dispatcher}
+                    onClick={() => navigateTo(ROUTES.dispatcher)}
+                  >
+                    Dispatcher
+                  </NavButton>
+                )}
+                {["dispatcher", "admin"].includes(auth.role) && (
+                  <NavButton
+                    active={route === ROUTES.drones}
+                    onClick={() => navigateTo(ROUTES.drones)}
+                  >
+                    Drones
+                  </NavButton>
+                )}
+                {/* Admin only */}
+                {auth.role === "admin" && (
+                  <NavButton
+                    active={route === ROUTES.admin}
+                    onClick={() => navigateTo(ROUTES.admin)}
+                  >
+                    Admin
+                  </NavButton>
+                )}
+                {auth.role === "admin" && (
+                  <NavButton
+                    active={route === ROUTES.audit}
+                    onClick={() => navigateTo(ROUTES.audit)}
+                  >
+                    Audit
+                  </NavButton>
+                )}
                 <NavButton onClick={refresh}>Refresh</NavButton>
                 <NavButton onClick={signOut}>Sign out</NavButton>
               </>
@@ -573,40 +618,52 @@ function App() {
           setSelectedOrderId={setSelectedOrderId}
         />
       )}
+      {/* Dispatcher & Admin only pages */}
       {route === ROUTES.dispatcher && (
-        <DispatcherPage
-          admin={admin}
-          orders={orders}
-          drones={drones}
-          auditLogs={auditLogs}
-          selectedOrder={selectedOrder}
-          selectedDrone={selectedDrone}
-          selectedOrderId={selectedOrderId}
-          selectedDroneId={selectedDroneId}
-          setSelectedOrderId={setSelectedOrderId}
-          setSelectedDroneId={setSelectedDroneId}
-          onEvaluate={evaluateSelectedOrder}
-          onAssign={assignSelectedOrder}
-          onToggleBusyDay={setBusyDay}
-          busyDay={busyDay}
-        />
+        ["dispatcher", "admin"].includes(auth?.role)
+          ? <DispatcherPage
+              admin={admin}
+              orders={orders}
+              drones={drones}
+              auditLogs={auditLogs}
+              selectedOrder={selectedOrder}
+              selectedDrone={selectedDrone}
+              selectedOrderId={selectedOrderId}
+              selectedDroneId={selectedDroneId}
+              setSelectedOrderId={setSelectedOrderId}
+              setSelectedDroneId={setSelectedDroneId}
+              onEvaluate={evaluateSelectedOrder}
+              onAssign={assignSelectedOrder}
+              onToggleBusyDay={setBusyDay}
+              busyDay={busyDay}
+            />
+          : <AccessDenied role={auth?.role} required="dispatcher or admin" navigate={navigateTo} />
       )}
       {route === ROUTES.drones && (
-        <DronePage
-          drones={drones}
-          selectedDroneId={selectedDroneId}
-          setSelectedDroneId={setSelectedDroneId}
-        />
+        ["dispatcher", "admin"].includes(auth?.role)
+          ? <DronePage
+              drones={drones}
+              selectedDroneId={selectedDroneId}
+              setSelectedDroneId={setSelectedDroneId}
+            />
+          : <AccessDenied role={auth?.role} required="dispatcher or admin" navigate={navigateTo} />
       )}
+      {/* Admin only pages */}
       {route === ROUTES.admin && (
-        <AdminPage
-          admin={admin}
-          busyDay={busyDay}
-          onBusyDayChange={setBusyDay}
-          onSave={saveAdminSettings}
-        />
+        auth?.role === "admin"
+          ? <AdminPage
+              admin={admin}
+              busyDay={busyDay}
+              onBusyDayChange={setBusyDay}
+              onSave={saveAdminSettings}
+            />
+          : <AccessDenied role={auth?.role} required="admin" navigate={navigateTo} />
       )}
-      {route === ROUTES.audit && <AuditPage state={state} />}
+      {route === ROUTES.audit && (
+        auth?.role === "admin"
+          ? <AuditPage state={state} />
+          : <AccessDenied role={auth?.role} required="admin" navigate={navigateTo} />
+      )}
 
       <footer className="page-footer">
         Use <code>VITE_API_BASE_URL</code> to point the React app at another

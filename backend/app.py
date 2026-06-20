@@ -2,7 +2,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.config import settings
-from backend.routes import predict, orders, drones, admin
+from backend.routes import predict, orders, drones, admin, auth
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -20,6 +20,7 @@ app.add_middleware(
 )
 
 # Include routes
+app.include_router(auth.router, prefix=settings.API_V1_STR + "/auth", tags=["Authentication"])
 app.include_router(predict.router, prefix=settings.API_V1_STR + "/predict", tags=["Prediction"])
 app.include_router(orders.router, prefix=settings.API_V1_STR + "/orders", tags=["Orders"])
 app.include_router(drones.router, prefix=settings.API_V1_STR + "/drones", tags=["Drones"])
